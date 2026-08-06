@@ -1,11 +1,14 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabaseClient";
 
 export default function Home() {
   const [scrolled, setScrolled] = useState(false);
   const [showMobileBar, setShowMobileBar] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
   const heroImgRef = useRef<HTMLImageElement>(null);
   const heroRef = useRef<HTMLElement>(null);
 
@@ -25,10 +28,37 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setError("");
+
+    const form = e.currentTarget;
+    const fullName = (form.elements.namedItem("fname") as HTMLInputElement).value.trim();
+    const email = (form.elements.namedItem("femail") as HTMLInputElement).value.trim();
+    const area = (form.elements.namedItem("floc") as HTMLSelectElement).value;
+    const budget = (form.elements.namedItem("fbudget") as HTMLSelectElement).value;
+    const roomType = (form.elements.namedItem("fcategory") as HTMLSelectElement).value;
+
+    setSubmitting(true);
+    const { error: insertError } = await supabase.from("waitlist_entries").insert({
+      full_name: fullName,
+      email,
+      area,
+      budget,
+      room_type: roomType,
+    });
+    setSubmitting(false);
+
+    if (insertError) {
+      if (insertError.code === "23505") {
+        setError("That email is already on the waitlist.");
+      } else {
+        setError("Something went wrong. Please try again.");
+      }
+      return;
+    }
+
     setSubmitted(true);
-    // TODO: wire this up to Supabase (insert into a waitlist_entries table)
   };
 
   return (
@@ -155,12 +185,17 @@ export default function Home() {
 
                 <div className="field">
                   <label htmlFor="fname">Full name</label>
-                  <input type="text" id="fname" placeholder="e.g. Amina Yusuf" required />
+                  <input type="text" id="fname" name="fname" placeholder="e.g. Amina Yusuf" required />
+                </div>
+
+                <div className="field">
+                  <label htmlFor="femail">Email</label>
+                  <input type="email" id="femail" name="femail" placeholder="e.g. amina@example.com" required />
                 </div>
 
                 <div className="field select-wrap">
                   <label htmlFor="floc">Where in Malete would you like to stay?</label>
-                  <select id="floc" required defaultValue="">
+                  <select id="floc" name="floc" required defaultValue="">
                     <option value="" disabled>Select an area</option>
                     <option>Westend</option>
                     <option>School Gate</option>
@@ -171,7 +206,7 @@ export default function Home() {
 
                 <div className="field select-wrap">
                   <label htmlFor="fbudget">Expected budget</label>
-                  <select id="fbudget" required defaultValue="">
+                  <select id="fbudget" name="fbudget" required defaultValue="">
                     <option value="" disabled>Select a range</option>
                     <option>Below ₦150,000</option>
                     <option>₦150,000 – ₦200,000</option>
@@ -184,7 +219,7 @@ export default function Home() {
 
                 <div className="field select-wrap">
                   <label htmlFor="fcategory">Room type</label>
-                  <select id="fcategory" required defaultValue="">
+                  <select id="fcategory" name="fcategory" required defaultValue="">
                     <option value="" disabled>Select an option</option>
                     <option>Self-contained</option>
                     <option>Single room</option>
@@ -193,8 +228,14 @@ export default function Home() {
                   </select>
                 </div>
 
-                <button type="submit" className="submit-btn">
-                  Join the Waitlist
+                {error && (
+                  <p style={{ color: "#B33A3A", fontSize: "13px", marginBottom: "14px" }}>
+                    {error}
+                  </p>
+                )}
+
+                <button type="submit" className="submit-btn" disabled={submitting}>
+                  {submitting ? "Joining..." : "Join the Waitlist"}
                   <svg viewBox="0 0 24 24" fill="none"><path d="M5 12H19M19 12L13 6M19 12L13 18" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                 </button>
 
