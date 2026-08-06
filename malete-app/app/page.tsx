@@ -9,10 +9,79 @@ export default function Home() {
   const [submitted, setSubmitted] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [foundingCount, setFoundingCount] = useState<number | null>(null);
+  const [insights, setInsights] = useState<{
+    topArea: string;
+    topBudget: string;
+    topRoomType: string;
+  } | null>(null);
   const heroImgRef = useRef<HTMLImageElement>(null);
   const heroRef = useRef<HTMLElement>(null);
 
-  const title = "Welcome to Your New Home";
+  const MAX_FOUNDING = 500;
+
+  const title = "Your hostel, sorted. Before resumption.";
+
+  // Fetch founding member count and live insights
+  useEffect(() => {
+    const fetchStats = async () => {
+      const { count } = await supabase
+        .from("waitlist_entries")
+        .select("*", { count: "exact", head: true });
+
+      if (count !== null) {
+        setFoundingCount(count);
+      }
+
+      if (count && count >= 10) {
+        const { data: areaData } = await supabase
+          .from("waitlist_entries")
+          .select("area")
+          .not("area", "is", null);
+
+        const { data: budgetData } = await supabase
+          .from("waitlist_entries")
+          .select("budget")
+          .not("budget", "is", null);
+
+        const { data: roomData } = await supabase
+          .from("waitlist_entries")
+          .select("room_type")
+          .not("room_type", "is", null);
+
+        if (areaData && budgetData && roomData) {
+          const topArea = getTopValue(areaData, "area");
+          const topBudget = getTopValue(budgetData, "budget");
+          const topRoomType = getTopValue(roomData, "room_type");
+
+          setInsights({ topArea, topBudget, topRoomType });
+        }
+      }
+    };
+
+    fetchStats();
+  }, [submitted]);
+
+  const getTopValue = (data: Record<string, string>[], key: string): string => {
+    const counts: Record<string, number> = {};
+    data.forEach((row) => {
+      const val = row[key];
+      if (val) {
+        counts[val] = (counts[val] || 0) + 1;
+      }
+    });
+
+    let maxCount = 0;
+    let topVal = "";
+    Object.entries(counts).forEach(([val, count]) => {
+      if (count > maxCount) {
+        maxCount = count;
+        topVal = val;
+      }
+    });
+
+    return topVal;
+  };
 
   useEffect(() => {
     const onScroll = () => {
@@ -35,6 +104,9 @@ export default function Home() {
     const form = e.currentTarget;
     const fullName = (form.elements.namedItem("fname") as HTMLInputElement).value.trim();
     const email = (form.elements.namedItem("femail") as HTMLInputElement).value.trim();
+    const campus = (form.elements.namedItem("fcampus") as HTMLSelectElement).value;
+    const studentStatus = (form.elements.namedItem("fstatus") as HTMLSelectElement).value;
+    const gender = (form.elements.namedItem("fgender") as HTMLSelectElement).value;
     const area = (form.elements.namedItem("floc") as HTMLSelectElement).value;
     const budget = (form.elements.namedItem("fbudget") as HTMLSelectElement).value;
     const roomType = (form.elements.namedItem("fcategory") as HTMLSelectElement).value;
@@ -43,6 +115,9 @@ export default function Home() {
     const { error: insertError } = await supabase.from("waitlist_entries").insert({
       full_name: fullName,
       email,
+      campus,
+      student_status: studentStatus,
+      gender,
       area,
       budget,
       room_type: roomType,
@@ -101,7 +176,7 @@ export default function Home() {
           </h1>
           <p>
             Find verified accommodation around Kwara State University before resumption.
-            Compare prices, see how far you&apos;ll be from campus, and reserve your spot
+            Compare prices, see how far you&apos;ll be from campus, and secure your spot
             before the rush starts.
           </p>
           <div className="hero-actions">
@@ -137,12 +212,12 @@ export default function Home() {
           <div className="card">
             <div className="card-icon"><svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.8" /><circle cx="16" cy="8" r="3" stroke="currentColor" strokeWidth="1.8" /><path d="M2 20C2 16 4.5 14 8 14C11.5 14 14 16 14 20M14 20C14 16.5 16 15 18.5 15C21 15 22 16.5 22 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg></div>
             <h3>Find a roommate</h3>
-            <p>Match with other incoming students looking to share a room or an apartment.</p>
+            <p>Coming soon — match with other students looking to share a room or apartment.</p>
           </div>
           <div className="card">
             <div className="card-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8 2 5 5 5 9C5 14 12 22 12 22C12 22 19 14 19 9C19 5 16 2 12 2Z" stroke="currentColor" strokeWidth="1.8" /><circle cx="12" cy="9" r="2.4" stroke="currentColor" strokeWidth="1.8" /></svg></div>
             <h3>Explore areas around campus</h3>
-            <p>See what&apos;s near each hostel, markets, shuttle routes, banks, and clinics.</p>
+            <p>See what&apos;s near each hostel — markets, shuttle routes, banks, and clinics.</p>
           </div>
           <div className="card">
             <div className="card-icon"><svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14.6 8.6L20.8 9.4L16.2 13.4L17.5 19.5L12 16.4L6.5 19.5L7.8 13.4L3.2 9.4L9.4 8.6L12 3Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" /></svg></div>
@@ -151,6 +226,39 @@ export default function Home() {
           </div>
         </div>
       </section>
+
+      {/* Live Insights Section */}
+      {insights && (
+        <section className="insights-section">
+          <div className="section-head">
+            <div className="eyebrow">Live data from the waitlist</div>
+            <h2>Here&apos;s what students are saying so far.</h2>
+          </div>
+          <div className="insights-grid">
+            <div className="insight-card">
+              <div className="insight-icon">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 2C8 2 5 5 5 9C5 14 12 22 12 22C12 22 19 14 19 9C19 5 16 2 12 2Z" stroke="currentColor" strokeWidth="1.8" /><circle cx="12" cy="9" r="2.4" stroke="currentColor" strokeWidth="1.8" /></svg>
+              </div>
+              <div className="insight-stat">{insights.topArea}</div>
+              <p>is the most requested area around Malete right now.</p>
+            </div>
+            <div className="insight-card">
+              <div className="insight-icon">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M3 11L12 4L21 11M5 10V20H19V10" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+              </div>
+              <div className="insight-stat">{insights.topBudget}</div>
+              <p>is the most common budget range students are working with.</p>
+            </div>
+            <div className="insight-card">
+              <div className="insight-icon">
+                <svg viewBox="0 0 24 24" fill="none"><circle cx="8" cy="8" r="3" stroke="currentColor" strokeWidth="1.8" /><circle cx="16" cy="8" r="3" stroke="currentColor" strokeWidth="1.8" /><path d="M2 20C2 16 4.5 14 8 14C11.5 14 14 16 14 20M14 20C14 16.5 16 15 18.5 15C21 15 22 16.5 22 20" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+              </div>
+              <div className="insight-stat">{insights.topRoomType}</div>
+              <p>is the room type most students are looking for.</p>
+            </div>
+          </div>
+        </section>
+      )}
 
       <section className="waitlist-section" id="waitlist">
         <img className="gate-watermark left" src="/gate-2.jpg" alt="" />
@@ -164,10 +272,14 @@ export default function Home() {
               University, starting right here in Malete. Join the waitlist and you&apos;ll
               be the first to know when verified listings open.
             </p>
-            <div className="waitlist-tag">
-              <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14.6 8.6L20.8 9.4L16.2 13.4L17.5 19.5L12 16.4L6.5 19.5L7.8 13.4L3.2 9.4L9.4 8.6L12 3Z" stroke="currentColor" strokeWidth="1.6" /></svg>
-              First 500 sign-ups get a founding member badge
-            </div>
+            {foundingCount !== null && (
+              <div className="waitlist-tag">
+                <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14.6 8.6L20.8 9.4L16.2 13.4L17.5 19.5L12 16.4L6.5 19.5L7.8 13.4L3.2 9.4L9.4 8.6L12 3Z" stroke="currentColor" strokeWidth="1.6" /></svg>
+                {MAX_FOUNDING - foundingCount > 0
+                  ? `${MAX_FOUNDING - foundingCount} of ${MAX_FOUNDING} founding spots left`
+                  : "Founding member list is now full"}
+              </div>
+            )}
           </div>
 
           <div className="admission-card">
@@ -194,6 +306,37 @@ export default function Home() {
                 </div>
 
                 <div className="field select-wrap">
+                  <label htmlFor="fcampus">Where will you be studying?</label>
+                  <select id="fcampus" name="fcampus" required defaultValue="">
+                    <option value="" disabled>Select your campus</option>
+                    <option>Malete Campus</option>
+                    <option>Osi Campus</option>
+                    <option>I don&apos;t know yet</option>
+                  </select>
+                </div>
+
+                <div className="field select-wrap">
+                  <label htmlFor="fstatus">I am a...</label>
+                  <select id="fstatus" name="fstatus" required defaultValue="">
+                    <option value="" disabled>Select an option</option>
+                    <option>Incoming student (100 level)</option>
+                    <option>Returning student</option>
+                    <option>Postgraduate student</option>
+                    <option>Parent or guardian</option>
+                    <option>Hostel owner</option>
+                  </select>
+                </div>
+
+                <div className="field select-wrap">
+                  <label htmlFor="fgender">Gender</label>
+                  <select id="fgender" name="fgender" required defaultValue="">
+                    <option value="" disabled>Select an option</option>
+                    <option>Male</option>
+                    <option>Female</option>
+                  </select>
+                </div>
+
+                <div className="field select-wrap">
                   <label htmlFor="floc">Where in Malete would you like to stay?</label>
                   <select id="floc" name="floc" required defaultValue="">
                     <option value="" disabled>Select an area</option>
@@ -208,7 +351,8 @@ export default function Home() {
                   <label htmlFor="fbudget">Expected budget</label>
                   <select id="fbudget" name="fbudget" required defaultValue="">
                     <option value="" disabled>Select a range</option>
-                    <option>Below ₦150,000</option>
+                    <option>Below ₦80,000</option>
+                    <option>₦80,000 – ₦150,000</option>
                     <option>₦150,000 – ₦200,000</option>
                     <option>₦200,000 – ₦250,000</option>
                     <option>₦250,000 – ₦300,000</option>
@@ -241,7 +385,9 @@ export default function Home() {
 
                 <div className="founding-note">
                   <svg viewBox="0 0 24 24" fill="none"><path d="M12 3L14.6 8.6L20.8 9.4L16.2 13.4L17.5 19.5L12 16.4L6.5 19.5L7.8 13.4L3.2 9.4L9.4 8.6L12 3Z" stroke="currentColor" strokeWidth="1.6" /></svg>
-                  The first 500 students get a founding member badge
+                  {foundingCount !== null && MAX_FOUNDING - foundingCount > 0
+                    ? `${MAX_FOUNDING - foundingCount} of ${MAX_FOUNDING} founding spots left`
+                    : "Join the waitlist to get early access"}
                 </div>
               </form>
             ) : (
