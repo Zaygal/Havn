@@ -20,7 +20,7 @@ export default function Home() {
 
   const MAX_FOUNDING = 500;
 
-  const title = "Your hostel, sorted. Before resumption.";
+  const title = "Find your hostel before resumption.";
 
   // Fetch founding member count and live insights
   useEffect(() => {
@@ -175,9 +175,7 @@ export default function Home() {
             ))}
           </h1>
           <p>
-            Find verified accommodation around Kwara State University before resumption.
-            Compare prices, see how far you&apos;ll be from campus, and secure your spot
-            before the rush starts.
+            Find verified hostels around Kwara State University. Compare prices, distance to campus, and reserve your room before everyone else.
           </p>
           <div className="hero-actions">
             <a href="#waitlist" className="btn-primary">
