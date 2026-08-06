@@ -163,17 +163,7 @@ export default function Home() {
         </svg>
         <div className="hero-content">
           <div className="hero-eyebrow">Malete, Kwara State</div>
-          <h1>
-            {title.split("").map((ch, i) => (
-              <span
-                key={i}
-                className="char"
-                style={{ animationDelay: `${0.55 + i * 0.028}s` }}
-              >
-                {ch === " " ? "\u00A0" : ch}
-              </span>
-            ))}
-          </h1>
+          <h1 className="hero-headline">{title}</h1>
           <p>
             Find verified hostels around Kwara State University. Compare prices, distance to campus, and reserve your room before everyone else.
           </p>
