@@ -158,19 +158,27 @@ export default function Home() {
                   <input type="text" id="fname" placeholder="e.g. Amina Yusuf" required />
                 </div>
 
-                <div className="field">
+                <div className="field select-wrap">
                   <label htmlFor="floc">Where in Malete would you like to stay?</label>
-                  <input type="text" id="floc" placeholder="e.g. Oloje, Behind Gate, Osi Road, not sure yet" />
+                  <select id="floc" required defaultValue="">
+                    <option value="" disabled>Select an area</option>
+                    <option>Westend</option>
+                    <option>School Gate</option>
+                    <option>Safari</option>
+                    <option>Not sure yet</option>
+                  </select>
                 </div>
 
                 <div className="field select-wrap">
                   <label htmlFor="fbudget">Expected budget</label>
                   <select id="fbudget" required defaultValue="">
                     <option value="" disabled>Select a range</option>
-                    <option>Below ₦80,000</option>
-                    <option>₦80,000 – ₦150,000</option>
-                    <option>₦150,000 – ₦250,000</option>
-                    <option>Above ₦250,000</option>
+                    <option>Below ₦150,000</option>
+                    <option>₦150,000 – ₦200,000</option>
+                    <option>₦200,000 – ₦250,000</option>
+                    <option>₦250,000 – ₦300,000</option>
+                    <option>₦300,000 – ₦350,000</option>
+                    <option>Above ₦350,000</option>
                   </select>
                 </div>
 
